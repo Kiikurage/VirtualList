@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { VirtualListView } from './VirtualListView';
 
 export const AppShell = () => {
-    const [rows, setRows] = useState(10);
+    const [rows, setRows] = useState(1000);
 
     return (
         <div
@@ -33,7 +33,7 @@ export const AppShell = () => {
                     />
                 </label>
             </header>
-            <div style={{ border: '1px solid #000', resize: 'both', overflow: 'hidden' }}>
+            <div style={{ border: '1px solid #000', resize: 'both', overflow: 'hidden', flex: 1 }}>
                 <VirtualListView rows={rows} ItemRenderer={ItemRenderer} />
             </div>
         </div>

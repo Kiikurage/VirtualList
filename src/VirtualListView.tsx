@@ -1,6 +1,17 @@
-import { ComponentType, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+    ComponentType,
+    memo,
+    ReactNode,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { VirtualListState } from './VirtualListState';
 import { useResizeObserver } from './useResizeObserver';
+import { VirtualListItemView } from './VirtualListItemView';
 
 export const VirtualListView = ({
     rows,
@@ -9,6 +20,11 @@ export const VirtualListView = ({
     rows: number;
     ItemRenderer: ComponentType<{ row: number }>;
 }) => {
+    const memoizedItemRenderer = useMemo(
+        () => memo(ItemRenderer, (prevProps, nextProps) => prevProps.row !== nextProps.row),
+        [ItemRenderer],
+    );
+
     const [rowState, setRowState] = useState(() =>
         VirtualListState.create({
             numItems: rows,
@@ -24,21 +40,9 @@ export const VirtualListView = ({
         });
     }
 
-    const viewportRef = useRef<HTMLDivElement | null>(null);
+    const resizeObserver = useResizeObserver();
 
-    const resizeObserver = useResizeObserver((entries) => {
-        for (const entry of entries) {
-            if (entry.target === viewportRef.current) {
-                setRowState((oldState) =>
-                    VirtualListState.setViewportSize(oldState, entry.contentRect.height, 'start'),
-                );
-            }
-            const row = itemContainerMap.get(entry.target);
-            if (row !== undefined) {
-                setRowState((oldState) => VirtualListState.setItemSize(oldState, row, entry.contentRect.height));
-            }
-        }
-    });
+    const viewportRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(
         function syncScrollTop() {
@@ -56,49 +60,62 @@ export const VirtualListView = ({
             if (viewport === null) return;
 
             resizeObserver.observe(viewport);
-            return () => resizeObserver.unobserve(viewport);
+            resizeObserver.on(viewport, (entry) => {
+                setRowState((oldState) =>
+                    VirtualListState.setViewportSize(oldState, entry.contentRect.height, 'start'),
+                );
+            });
+            return () => resizeObserver.off(viewport);
         },
         [resizeObserver],
     );
 
-    const itemTops = useMemo(() => VirtualListState.getItemOffsets(rowState), [rowState]);
+    const handleViewportScroll = useCallback(() => {
+        const viewport = viewportRef.current;
+        if (viewport === null) return;
 
-    const [itemContainerMap] = useState(() => new Map<Element, number>());
+        setRowState((oldState) => VirtualListState.setScrollOffset(oldState, viewport.scrollTop));
+    }, []);
 
-    const updateItemContainerRef = useCallback(
-        (newItemContainer: HTMLElement | null) => {
-            if (newItemContainer === null) return;
+    const handleRowHeightChange = useCallback((row: number, height: number) => {
+        setRowState((oldState) => VirtualListState.setItemSize(oldState, row, height));
+    }, []);
 
-            const row = Number(newItemContainer.dataset['row']);
-            resizeObserver.observe(newItemContainer);
-            itemContainerMap.set(newItemContainer, row);
-        },
-        [itemContainerMap, resizeObserver],
-    );
+    const itemTops = useMemo(() => VirtualListState.getItemScrollOffsets(rowState), [rowState]);
+    const [rowFrom, rowTo] = VirtualListState.getVisibleItemIndexes(rowState);
+    const rowNodes: ReactNode[] = [];
+    for (let row = rowFrom; row < rowTo; row++) {
+        rowNodes.push(
+            <VirtualListItemView
+                key={`${row}`}
+                row={row}
+                top={itemTops[row] - rowState.scrollOffset}
+                resizeObserver={resizeObserver}
+                ItemRenderer={memoizedItemRenderer}
+                onRowHeightChange={handleRowHeightChange}
+            />,
+        );
+    }
 
     return (
-        <div ref={viewportRef} style={{ overflow: 'overlay', width: '100%', height: '100%' }}>
+        <div
+            ref={viewportRef}
+            style={{
+                overflow: 'overlay',
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+            }}
+            onScroll={handleViewportScroll}
+        >
             <div
                 style={{
-                    position: 'relative',
+                    position: 'absolute',
+                    inset: 0,
                     height: `${VirtualListState.getContentSize(rowState)}px`,
                 }}
-            >
-                {itemTops.map((top, row) => (
-                    <div
-                        key={`${row}`}
-                        data-row={row}
-                        ref={updateItemContainerRef}
-                        style={{
-                            position: 'absolute',
-                            top: `${top}px`,
-                            width: '100%',
-                        }}
-                    >
-                        <ItemRenderer row={row} />
-                    </div>
-                ))}
-            </div>
+            />
+            <div style={{ overflow: 'clip', position: 'sticky', inset: 0, height: '100%' }}>{rowNodes}</div>
         </div>
     );
 };
