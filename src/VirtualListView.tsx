@@ -2,8 +2,8 @@ import {
     ComponentType,
     memo,
     ReactNode,
+    UIEventHandler,
     useCallback,
-    useEffect,
     useLayoutEffect,
     useMemo,
     useRef,
@@ -12,6 +12,7 @@ import {
 import { VirtualListState } from './VirtualListState';
 import { useResizeObserver } from './useResizeObserver';
 import { VirtualListItemView } from './VirtualListItemView';
+import { ViewRecycleMapping } from './ViewRecycleMapping';
 
 export const VirtualListView = ({
     rows,
@@ -20,10 +21,9 @@ export const VirtualListView = ({
     rows: number;
     ItemRenderer: ComponentType<{ row: number }>;
 }) => {
-    const memoizedItemRenderer = useMemo(
-        () => memo(ItemRenderer, (prevProps, nextProps) => prevProps.row !== nextProps.row),
-        [ItemRenderer],
-    );
+    const viewRecycleMapping = useState(() => new ViewRecycleMapping())[0];
+
+    const memoizedItemRenderer = useMemo(() => memo(ItemRenderer), [ItemRenderer]);
 
     const [rowState, setRowState] = useState(() =>
         VirtualListState.create({
@@ -44,7 +44,7 @@ export const VirtualListView = ({
 
     const viewportRef = useRef<HTMLDivElement | null>(null);
 
-    useEffect(
+    useLayoutEffect(
         function syncScrollTop() {
             const viewport = viewportRef.current;
             if (viewport === null) return;
@@ -59,22 +59,18 @@ export const VirtualListView = ({
             const viewport = viewportRef.current;
             if (viewport === null) return;
 
-            resizeObserver.observe(viewport);
-            resizeObserver.on(viewport, (entry) => {
+            resizeObserver.observe(viewport, (entry) => {
                 setRowState((oldState) =>
                     VirtualListState.setViewportSize(oldState, entry.contentRect.height, 'start'),
                 );
             });
-            return () => resizeObserver.off(viewport);
+            return () => resizeObserver.unobserve(viewport);
         },
         [resizeObserver],
     );
 
-    const handleViewportScroll = useCallback(() => {
-        const viewport = viewportRef.current;
-        if (viewport === null) return;
-
-        setRowState((oldState) => VirtualListState.setScrollOffset(oldState, viewport.scrollTop));
+    const handleViewportScroll: UIEventHandler = useCallback((ev) => {
+        setRowState((oldState) => VirtualListState.setScrollOffset(oldState, (ev.target as Element).scrollTop));
     }, []);
 
     const handleRowHeightChange = useCallback((row: number, height: number) => {
@@ -83,18 +79,34 @@ export const VirtualListView = ({
 
     const itemTops = useMemo(() => VirtualListState.getItemScrollOffsets(rowState), [rowState]);
     const [rowFrom, rowTo] = VirtualListState.getVisibleItemIndexes(rowState);
+    viewRecycleMapping.update(rowFrom, rowTo);
+
     const rowNodes: ReactNode[] = [];
-    for (let row = rowFrom; row < rowTo; row++) {
-        rowNodes.push(
-            <VirtualListItemView
-                key={`${row}`}
-                row={row}
-                top={itemTops[row] - rowState.scrollOffset}
-                resizeObserver={resizeObserver}
-                ItemRenderer={memoizedItemRenderer}
-                onRowHeightChange={handleRowHeightChange}
-            />,
-        );
+    for (const { viewId, contentId: row } of viewRecycleMapping.entries) {
+        if (row === undefined) {
+            rowNodes.push(
+                <VirtualListItemView
+                    hidden
+                    key={viewId}
+                    row={-1}
+                    top={-1}
+                    resizeObserver={resizeObserver}
+                    ItemRenderer={memoizedItemRenderer}
+                    onRowHeightChange={handleRowHeightChange}
+                />,
+            );
+        } else {
+            rowNodes.push(
+                <VirtualListItemView
+                    key={viewId}
+                    row={row}
+                    top={itemTops[row] - rowState.scrollOffset}
+                    resizeObserver={resizeObserver}
+                    ItemRenderer={memoizedItemRenderer}
+                    onRowHeightChange={handleRowHeightChange}
+                />,
+            );
+        }
     }
 
     return (

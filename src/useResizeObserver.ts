@@ -26,26 +26,19 @@ export class ResizeObserverWrapper {
         }
     };
 
-    observe(element: Element) {
+    observe(element: Element, callback: (entry: ResizeObserverEntry) => void) {
+        this.unobserve(element);
         this.resizeObserver.observe(element);
+        this.callbacks.set(element, callback);
     }
 
     unobserve(element: Element) {
         this.resizeObserver.unobserve(element);
+        this.callbacks.delete(element);
     }
 
     disconnect() {
         this.resizeObserver.disconnect();
         this.callbacks.clear();
-    }
-
-    on(element: Element, callback: (entry: ResizeObserverEntry) => void) {
-        this.off(element);
-
-        this.callbacks.set(element, callback);
-    }
-
-    off(element: Element) {
-        this.callbacks.delete(element);
     }
 }
