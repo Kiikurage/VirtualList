@@ -3,6 +3,7 @@ module.exports = {
     root: true,
     rules: {
         'react/react-in-jsx-scope': 'off',
+        'react-hooks/exhaustive-deps': 'error',
     },
     overrides: [
         {
