@@ -21,3 +21,4 @@
 4. [スクロール処理のオーバーライド](doc/04-scroll-override/README.md)
 5. [状態の切り出しとテスト](doc/05-state-and-test/README.md)
 6. [Viewportのリサイズへの対応](doc/06-viewport-resize/README.md)
+7. [行のリサイズへの対応](doc/07-row-resize/README.md)
