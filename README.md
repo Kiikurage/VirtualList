@@ -19,3 +19,4 @@
 2. [固定サイズ要素の仮想化](doc/02-virtualize-fix-sized-rows/README.md)
 3. [バッファリング](doc/03-buffering/README.md)
 4. [スクロール処理のオーバーライド](doc/04-scroll-override/README.md)
+5. [状態の切り出しとテスト](doc/05-state-and-test/README.md)

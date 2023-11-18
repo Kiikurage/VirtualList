@@ -1,14 +1,19 @@
 import { ReactNode, useState } from 'react';
+import { VirtualListState } from './VirtualListState';
 
 const ROW_HEIGHT = 50;
 const VIEWPORT_HEIGHT = 600;
 
 export const VirtualList = ({ rows }: { rows: number }) => {
-    const [scrollTop, setScrollTop] = useState(0);
+    const [virtualListState, setVirtualListState] = useState(() =>
+        VirtualListState.create(rows, ROW_HEIGHT, VIEWPORT_HEIGHT),
+    );
 
-    const rowFrom = Math.max(0, Math.min(Math.floor(scrollTop / ROW_HEIGHT), rows));
-    const rowTo = Math.max(0, Math.min(Math.ceil((scrollTop + VIEWPORT_HEIGHT) / ROW_HEIGHT), rows));
+    if (rows !== virtualListState.rows) {
+        setVirtualListState((oldState) => oldState.setRows(rows));
+    }
 
+    const [rowFrom, rowTo] = virtualListState.getVisibleRowRange();
     const rowNodes: ReactNode[] = [];
     for (let row = rowFrom; row < rowTo; row++) {
         rowNodes.push(
@@ -16,14 +21,14 @@ export const VirtualList = ({ rows }: { rows: number }) => {
                 key={row}
                 style={{
                     position: 'absolute',
-                    top: `${row * ROW_HEIGHT - scrollTop}`,
+                    top: `${row * virtualListState.rowHeight - virtualListState.scrollTop}`,
                     padding: '20px',
                     borderTop: '1px solid #000',
                     overflow: 'hidden',
                     background: '#fff',
                     boxSizing: 'border-box',
                     width: '100%',
-                    height: `${ROW_HEIGHT}px`,
+                    height: `${virtualListState.rowHeight}px`,
                 }}
             >
                 ListItem {row}
@@ -40,12 +45,15 @@ export const VirtualList = ({ rows }: { rows: number }) => {
                 listStyle: 'none',
                 border: '4px solid #000',
                 background: '#c0c0c0',
-                height: `${VIEWPORT_HEIGHT}px`,
+                height: `${virtualListState.viewportHeight}px`,
                 overflow: 'auto',
             }}
-            onScroll={(ev) => setScrollTop(ev.currentTarget.scrollTop)}
+            onScroll={(ev) => {
+                const scrollTop = ev.currentTarget.scrollTop;
+                setVirtualListState((oldState) => oldState.setScrollTop(scrollTop));
+            }}
         >
-            <div style={{ position: 'absolute', inset: 0, height: `${rows * ROW_HEIGHT}px` }} />
+            <div style={{ position: 'absolute', inset: 0, height: `${rows * virtualListState.rowHeight}px` }} />
 
             <div
                 style={{
