@@ -16,3 +16,4 @@
 ## 内容
 
 1. [普通のリストUI](doc/01-setup/README.md)
+2. [固定サイズ要素の仮想化](doc/02-virtualize-fix-sized-rows/README.md)
