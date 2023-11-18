@@ -1,5 +1,6 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { VirtualListState } from './VirtualListState';
+import { useResizeObserver } from './useResizeObserver';
 
 const ROW_HEIGHT = 50;
 const VIEWPORT_HEIGHT = 600;
@@ -12,6 +13,21 @@ export const VirtualList = ({ rows }: { rows: number }) => {
     if (rows !== virtualListState.rows) {
         setVirtualListState((oldState) => oldState.setRows(rows));
     }
+
+    const resizeObserver = useResizeObserver((entries) => {
+        for (const entry of entries) {
+            setVirtualListState((oldState) => oldState.setViewportHeight(entry.contentRect.height));
+        }
+    });
+
+    const viewportRef = useRef<HTMLUListElement | null>(null);
+    useLayoutEffect(() => {
+        const viewport = viewportRef.current;
+        if (viewport === null) return;
+
+        resizeObserver.observe(viewport);
+        return () => resizeObserver.unobserve(viewport);
+    }, [resizeObserver]);
 
     const [rowFrom, rowTo] = virtualListState.getVisibleRowRange();
     const rowNodes: ReactNode[] = [];
@@ -38,6 +54,7 @@ export const VirtualList = ({ rows }: { rows: number }) => {
 
     return (
         <ul
+            ref={viewportRef}
             style={{
                 padding: 0,
                 margin: 0,
@@ -47,6 +64,7 @@ export const VirtualList = ({ rows }: { rows: number }) => {
                 background: '#c0c0c0',
                 height: `${virtualListState.viewportHeight}px`,
                 overflow: 'auto',
+                resize: 'both',
             }}
             onScroll={(ev) => {
                 const scrollTop = ev.currentTarget.scrollTop;

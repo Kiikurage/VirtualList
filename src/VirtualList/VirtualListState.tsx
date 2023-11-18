@@ -14,6 +14,10 @@ export class VirtualListState {
         return new VirtualListState(scrollTop, this.rows, this.rowHeight, this.viewportHeight);
     }
 
+    setViewportHeight(viewportHeight: number): VirtualListState {
+        return new VirtualListState(this.scrollTop, this.rows, this.rowHeight, viewportHeight);
+    }
+
     setRows(rows: number): VirtualListState {
         return new VirtualListState(this.scrollTop, rows, this.rowHeight, this.viewportHeight);
     }
