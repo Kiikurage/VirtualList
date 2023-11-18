@@ -2,11 +2,13 @@ import { ReactNode, useState } from 'react';
 
 const ROW_HEIGHT = 50;
 const VIEWPORT_HEIGHT = 600;
+const BUFFER_SIZE = 600;
+
 export const VirtualList = ({ rows }: { rows: number }) => {
     const [scrollTop, setScrollTop] = useState(0);
 
-    const rowFrom = Math.max(0, Math.min(Math.floor(scrollTop / ROW_HEIGHT), rows));
-    const rowTo = Math.max(0, Math.min(Math.ceil((scrollTop + VIEWPORT_HEIGHT) / ROW_HEIGHT), rows));
+    const rowFrom = Math.max(0, Math.min(Math.floor((scrollTop - BUFFER_SIZE) / ROW_HEIGHT), rows));
+    const rowTo = Math.max(0, Math.min(Math.ceil((scrollTop + VIEWPORT_HEIGHT + BUFFER_SIZE) / ROW_HEIGHT), rows));
 
     const rowNodes: ReactNode[] = [];
     for (let row = rowFrom; row < rowTo; row++) {
