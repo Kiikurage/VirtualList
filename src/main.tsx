@@ -15,7 +15,24 @@ const Playground = () => {
                 行数
                 <input value={rows} type="number" onChange={(ev) => setRows(Number(ev.target.value))} />
             </header>
-            <VirtualList rows={rows} />
+            <VirtualList rows={rows} rowRenderer={Row} />
+        </div>
+    );
+};
+
+const Row = ({ row }: { row: number }) => {
+    return (
+        <div
+            style={{
+                padding: '20px',
+                borderTop: '1px solid #000',
+                overflow: 'hidden',
+                resize: 'vertical',
+                background: '#fff',
+                boxSizing: 'border-box',
+            }}
+        >
+            VirtualList Row {row} <input type="text" /> <button>Button</button>
         </div>
     );
 };

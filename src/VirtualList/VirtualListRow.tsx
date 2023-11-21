@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { ComponentType, useLayoutEffect, useRef } from 'react';
 import { ResizeObserverWrapper } from './useResizeObserver';
 
 export const VirtualListRow = ({
@@ -6,11 +6,13 @@ export const VirtualListRow = ({
     top,
     resizeObserver,
     onResize,
+    rowRenderer: RowRenderer,
 }: {
     row: number;
     top: number;
     resizeObserver: ResizeObserverWrapper;
     onResize: (row: number, entry: ResizeObserverEntry) => void;
+    rowRenderer: ComponentType<{ row: number }>;
 }) => {
     const rowRef = useRef<HTMLLIElement | null>(null);
     useLayoutEffect(() => {
@@ -30,18 +32,7 @@ export const VirtualListRow = ({
                 width: '100%',
             }}
         >
-            <div
-                style={{
-                    padding: '20px',
-                    borderTop: '1px solid #000',
-                    overflow: 'hidden',
-                    resize: 'vertical',
-                    background: '#fff',
-                    boxSizing: 'border-box',
-                }}
-            >
-                ListItem {row}
-            </div>
+            <RowRenderer row={row} />
         </li>
     );
 };

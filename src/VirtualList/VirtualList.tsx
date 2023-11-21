@@ -1,4 +1,4 @@
-import { ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import { ComponentType, ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { VirtualListState } from './VirtualListState';
 import { useResizeObserver } from './useResizeObserver';
 import { VirtualListRow } from './VirtualListRow';
@@ -6,7 +6,7 @@ import { VirtualListRow } from './VirtualListRow';
 const ROW_HEIGHT = 50;
 const VIEWPORT_HEIGHT = 600;
 
-export const VirtualList = ({ rows }: { rows: number }) => {
+export const VirtualList = ({ rows, rowRenderer }: { rows: number; rowRenderer: ComponentType<{ row: number }> }) => {
     const [virtualListState, setVirtualListState] = useState(() =>
         VirtualListState.create(rows, ROW_HEIGHT, VIEWPORT_HEIGHT),
     );
@@ -41,6 +41,7 @@ export const VirtualList = ({ rows }: { rows: number }) => {
                     setVirtualListState((oldState) => oldState.setRowHeight(row, entry.contentRect.height));
                 }}
                 resizeObserver={resizeObserver}
+                rowRenderer={rowRenderer}
             />,
         );
     }

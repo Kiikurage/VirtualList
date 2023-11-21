@@ -22,3 +22,4 @@
 5. [状態の切り出しとテスト](doc/05-state-and-test/README.md)
 6. [Viewportのリサイズへの対応](doc/06-viewport-resize/README.md)
 7. [行のリサイズへの対応](doc/07-row-resize/README.md)
+8. [行に任意の内容を表示する](doc/08-row-contents/README.md)
